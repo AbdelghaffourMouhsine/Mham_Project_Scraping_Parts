@@ -1,0 +1,122 @@
+# To execute this docker-compose yml file use `docker-compose -f docker-compose.yml up`
+# Add the `-d` flag at the end for detached execution
+# To stop the execution, hit Ctrl+C, and then `docker-compose -f docker-compose.yml down`
+version: "3"
+services:
+  # main_mham_project:
+  #   build:
+  #     context: .
+  #     dockerfile: ./Dockerfile
+  #   container_name: main-mham_project
+  #   # restart: always
+  #   networks:
+  #    - default
+  #   volumes:
+  #     - /home/abdelghafour.mouhsine/jupyter/mham_project/Mham_Project:/app
+  #   depends_on:
+  #     - selenium_hub_mham_project
+  #     - ollama_mham_project
+  #   command: ["python", "./main.py"]
+
+  jupyter_mham_project1:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: jupyter-mham-project1
+    environment:
+      - JUPYTER_TOKEN=99
+    restart: always
+    ports:
+     - 11111:8888
+    networks:
+     - default
+    volumes:
+     - /home/abdelghafour.mouhsine/jupyter/Mham_Project_Scraping_Parts_1:/home/jovyan/work
+    depends_on:
+     - selenium_hub_mham_project1
+      
+  chrome_1_mham_project1:
+    image: selenium/node-chrome:4.18.1-20240224
+    shm_size: 2gb
+    depends_on:
+      - selenium_hub_mham_project1
+    environment:
+      - SE_EVENT_BUS_HOST=selenium_hub_mham_project1
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_NODE_MAX_SESSIONS=20
+  
+  chrome_2_mham_project1:
+    image: selenium/node-chrome:4.18.1-20240224
+    shm_size: 2gb
+    depends_on:
+      - selenium_hub_mham_project1
+    environment:
+      - SE_EVENT_BUS_HOST=selenium_hub_mham_project1
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_NODE_MAX_SESSIONS=20
+
+  chrome_3_mham_project1:
+    image: selenium/node-chrome:4.18.1-20240224
+    shm_size: 2gb
+    depends_on:
+      - selenium_hub_mham_project1
+    environment:
+      - SE_EVENT_BUS_HOST=selenium_hub_mham_project1
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_NODE_MAX_SESSIONS=20
+
+  chrome_4_mham_project1:
+    image: selenium/node-chrome:4.18.1-20240224
+    shm_size: 2gb
+    depends_on:
+      - selenium_hub_mham_project1
+    environment:
+      - SE_EVENT_BUS_HOST=selenium_hub_mham_project1
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_NODE_MAX_SESSIONS=20
+
+  chrome_5_mham_project1:
+    image: selenium/node-chrome:4.18.1-20240224
+    shm_size: 2gb
+    depends_on:
+      - selenium_hub_mham_project1
+    environment:
+      - SE_EVENT_BUS_HOST=selenium_hub_mham_project1
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_NODE_MAX_SESSIONS=20
+      
+  chrome_6_mham_project1:
+    image: selenium/node-chrome:4.18.1-20240224
+    shm_size: 2gb
+    depends_on:
+      - selenium_hub_mham_project1
+    environment:
+      - SE_EVENT_BUS_HOST=selenium_hub_mham_project1
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_NODE_MAX_SESSIONS=20
+
+  
+  selenium_hub_mham_project1:
+    image: selenium/hub:4.18.1-20240224
+    container_name: selenium-hub-mham-project1
+    ports:
+      - "4462:4442"
+      - "4463:4443"
+      - "4464:4444"
+      
+networks:
+   default:
+      external:
+         name: network-gw-3-1
