@@ -20,8 +20,10 @@ from Part import Part
 from PartStorage import PartStorage
 from CheckPartStorage import CheckPartStorage
 
+from ListeBrandDic import ListeBrandDic
+
 class PartInfoProcess:
-    def __init__(self, thread_id=0, start_brand=None, start_year=None, start_model=None, start_elem_X=None, start_elem_XX=None, start_part_name=None, end_brand=None,end_year=None,end_model=None,end_elem_X=None,end_elem_XX=None,end_part_name=None, PROXY_HOST=None, PROXY_PORT=None, PROXY_USER=None, PROXY_PASS=None, use_proxy=False, with_selenium_grid=False, workerThread=None):
+    def __init__(self, thread_id=0, start_brand=None, start_year=None, start_model=None, start_elem_X=None, start_elem_XX=None, start_part_name=None, end_brand=None,end_year=None,end_model=None,end_elem_X=None,end_elem_XX=None,end_part_name=None, PROXY_HOST=None, PROXY_PORT=None, PROXY_USER=None, PROXY_PASS=None, use_proxy=False, with_selenium_grid=False, workerThread=None, is_for_extract_models=False):
 
         self.workerThread = workerThread
         self.use_proxy = use_proxy
@@ -69,15 +71,13 @@ class PartInfoProcess:
             os.makedirs('images')
         if not os.path.exists('results'):
             os.makedirs('results')
-
-        self.lock_file_check_part = threading.Lock()
-        self.thread_id = thread_id
         
-        self.start_scraping()
-        ####################################################################################################################
-        # self.lock_file_liste_brand_dic = threading.Lock()
-        # self.extract_models()
-        ####################################################################################################################
+        self.thread_id = thread_id
+
+        if is_for_extract_models:
+            self.extract_liste_brand_dic()
+        else:
+            self.start_scraping()
         
         self.driver.quit()
         print(f"%"*500)
@@ -937,6 +937,129 @@ class PartInfoProcess:
                                     self.check_part['year'] = None
                                     get_elems_in_year = years_elem[j].find_element(By.XPATH, "./div[1]/div/table/tbody/tr/td[2]/a")
                                     self.click_elem(get_elems_in_year)
+                                j=j+1
+                                previous_is_error = False
+                            except Exception as e:
+                                print("error in level 1 : ",e)
+                                if not previous_is_error :
+                                    previous_is_error = True
+                                    print(self.url)
+                                    years_elem = self.refresh_page(self.url, level=1,i=i,j=j)
+                                    print("refresh_page finished j==",j)
+                                else:
+                                    j+=1
+                        get_years_elem = self.elements[i].find_element(By.XPATH, "./div[1]/div/table/tbody/tr/td[1]/a")
+                        self.click_elem(get_years_elem)
+                
+                i=i+1
+                previous_is_error = False
+            except Exception as e:
+                print("error in level 0 : ",e)
+                if not previous_is_error :
+                    previous_is_error = True
+                    print(self.url)
+                    self.refresh_page(self.url, level=0,i=i)
+                    print("refresh_page finished i==",i)
+                else:
+                    i+=1
+
+    def extract_liste_brand_dic(self):
+        previous_is_error = False
+        i=0
+        while i < len(self.elements):
+            try:
+                part = Part()
+
+                if len(self.elements[i].find_elements(By.XPATH, "./*")) > 3:
+                    part.brand_name = self.elements[i].find_element(By.XPATH, "./div[1]/div/table/tbody/tr/td[2]/a").text
+                    part.Brand = part.brand_name
+                    print(part.brand_name)
+
+                    self.elem_state["check_start_brand"], self.elem_state["check_end_brand"] = self.verify_start_elem(part.brand_name, self.elem_state["start_brand"], self.elem_state["end_brand"], self.elem_state["check_start_brand"], self.elem_state["check_end_brand"], 0, self.elem_state)
+                    if not self.elem_state["check_start_brand"] and self.elem_state["check_end_brand"]:
+                        break
+                    if self.elem_state["check_start_brand"]:
+                        # print("----->valid_brand")
+                        self.url = self.driver.current_url
+                        # Créer le dossier 'images/BRAND' s'il n'existe pas
+                        if not os.path.exists(f'images/{self.nom_valide(part.Brand)}'):
+                            os.makedirs(f'images/{self.nom_valide(part.Brand)}')
+                        if not os.path.exists(f'results/{self.nom_valide(part.Brand)}'):
+                            os.makedirs(f'results/{self.nom_valide(part.Brand)}')
+
+                        get_years_elem = self.elements[i].find_element(By.XPATH, "./div[1]/div/table/tbody/tr/td[1]/a")
+                        self.click_elem(get_years_elem)
+                        time.sleep(1) ######
+                        
+                        years_elem = self.extract_childs(self.elements[i], "./div[2]/*", "./div[1]/div/table/tbody/tr/td[3]/a")
+
+                        self.check_part['brand'] = part.Brand
+                        if len(years_elem) == 0:
+                            with self.workerThread.lock_file_check_part:
+                                check_part_storage = CheckPartStorage()
+                                check_part_storage.insert_check_part(self.check_part)
+                                check_part_storage.close_file()
+                        j=0
+                        while j < len(years_elem):
+                            try:
+                                part.Year = years_elem[j].find_element(By.XPATH, "./div[1]/div/table/tbody/tr/td[3]/a").text
+                                print(f"**{part.Year}")
+
+                                self.elem_state["check_start_year"], self.elem_state["check_end_year"] = self.verify_start_elem(part.Year, self.elem_state["start_year"], self.elem_state["end_year"], self.elem_state["check_start_year"], self.elem_state["check_end_year"], 1, self.elem_state)
+                                if not self.elem_state["check_start_year"] and self.elem_state["check_end_year"]:
+                                    break
+                                if self.elem_state["check_start_year"]:
+                                    # print("-----> valid_year")
+                                    self.url = self.driver.current_url
+                                    check = False
+                                    t = 0
+                                    while not check and len(years_elem)>1 and t<5:
+                                        check = self.show_childs(years_elem[j], "./div[1]/div/table/tbody/tr/td[2]/a", self.elements[i], "./div[1]/div/table/tbody/tr/td[1]/a")
+                                        t+=1
+
+                                    elems_in_year = self.extract_childs(years_elem[j], "./div[2]/*", "./div[1]/div/table/tbody/tr/td[4]/a")
+                                    self.check_part['year'] = part.Year
+                                    if len(elems_in_year) == 0:
+                                        with self.workerThread.lock_file_check_part:
+                                            check_part_storage = CheckPartStorage()
+                                            check_part_storage.insert_check_part(self.check_part)
+                                            check_part_storage.close_file()
+                                            
+                                    liste_brand_dic = []
+                                    k=0
+                                    while k < len(elems_in_year):
+                                        try:
+                                            part.Model = elems_in_year[k].find_element(By.XPATH, "./div[1]/div/table/tbody/tr/td[4]/a").text
+                                            print(f"****{part.Model}")
+
+                                            brand_dic ={}
+                                            brand_dic["start_brand"]= part.Brand
+                                            brand_dic["start_year"]= part.Year
+                                            brand_dic["start_model"]= part.Model
+                                            brand_dic["end_brand"]= part.Brand
+                                            brand_dic["end_year"]= part.Year
+                                            brand_dic["end_model"]= part.Model
+                                            
+                                            liste_brand_dic.append(brand_dic)
+                                            
+                                            k=k+1
+                                            previous_is_error = False
+                                        except Exception as e:
+                                            print("error in level 2 : ",e)
+                                            if not previous_is_error :
+                                                previous_is_error = True
+                                                print(self.url)
+                                                years_elem, elems_in_year = self.refresh_page(self.url, level=2,i=i,j=j,k=k)
+                                                print("refresh_page finished k==",k)
+                                            else:
+                                                k+=1
+                                    self.check_part['year'] = None
+                                    get_elems_in_year = years_elem[j].find_element(By.XPATH, "./div[1]/div/table/tbody/tr/td[2]/a")
+                                    self.click_elem(get_elems_in_year)
+                                    
+                                    listeBrandDic = ListeBrandDic()
+                                    listeBrandDic.insert_liste_brand_dic(liste_brand_dic)
+                                    
                                 j=j+1
                                 previous_is_error = False
                             except Exception as e:

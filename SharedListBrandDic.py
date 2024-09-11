@@ -28,7 +28,7 @@ class SharedListBrandDic:
         self.nb_BrandDic = len(self.allBrandDic)
         
     def filtrer_dictionnaires(self):
-        self.allBrandDic = [d for d in self.allBrandDic if d['start_brand'] != 'BMW' and d['start_year'] != '2004']
+        self.allBrandDic = [d for d in self.allBrandDic if d['start_year'] != '2004']
         self.nb_BrandDic = len(self.allBrandDic)
         
     def select_data(self, start, end):
