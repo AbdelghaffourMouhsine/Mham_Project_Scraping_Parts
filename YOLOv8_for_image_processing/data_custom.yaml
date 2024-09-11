@@ -1,0 +1,6 @@
+train: C:\Users\Hp\Desktop\yolo_custom\train
+val: C:\Users\Hp\Desktop\yolo_custom\val
+
+nc: 1
+
+names: ["car"]
