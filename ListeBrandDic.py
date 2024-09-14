@@ -1,8 +1,8 @@
 import json
 
 class ListeBrandDic:
-    def __init__(self, file_path="results/ListBrandDic/liste_brand_dic"):
-        self.file_path = f"{file_path}.json"
+    def __init__(self, file_path="liste_brand_dic"):
+        self.file_path = f"results/ListBrandDic/{file_path}.json"
         
         # Try to read the existing data from the JSON file
         try:

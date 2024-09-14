@@ -1,6 +1,5 @@
 import pandas as pd
 from selenium import webdriver
-from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
@@ -49,10 +48,13 @@ class PartInfoProcess:
             
         self.with_selenium_grid = with_selenium_grid
         if self.with_selenium_grid:
-            self.HUB_HOST = "192.168.3.32"
-            self.HUB_PORT = 4464
+            self.HUB_HOST = "selenium_hub_mham_project1"
+            self.HUB_PORT = 4444
             self.server = f"http://{self.HUB_HOST}:{self.HUB_PORT}/wd/hub"
-            self.driver = webdriver.Remote(command_executor=self.server, options=self.options)
+            self.driver=None
+            with self.workerThread.lock_selenium_grid:
+                self.driver = webdriver.Remote(command_executor=self.server, options=self.options)
+                time.sleep(2)
         else:
             self.driver = webdriver.Chrome(options=self.options)
         
@@ -1057,7 +1059,7 @@ class PartInfoProcess:
                                     get_elems_in_year = years_elem[j].find_element(By.XPATH, "./div[1]/div/table/tbody/tr/td[2]/a")
                                     self.click_elem(get_elems_in_year)
                                     
-                                    listeBrandDic = ListeBrandDic()
+                                    listeBrandDic = ListeBrandDic(part.Brand)
                                     listeBrandDic.insert_liste_brand_dic(liste_brand_dic)
                                     
                                 j=j+1

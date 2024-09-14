@@ -5,8 +5,9 @@ from ExceptionsStorage import ExceptionsStorage
 class WorkerThread(threading.Thread):
     lock_file_check_part = threading.Lock()
     lock_file_exceptions = threading.Lock()
+    lock_selenium_grid = threading.Lock()
     
-    def __init__(self, thread_id, shared_list=None, proxyLoader=None,start_brand=None, start_year=None, start_model=None, start_elem_X=None, start_elem_XX=None, start_part_name=None, end_brand=None,end_year=None,end_model=None,end_elem_X=None,end_elem_XX=None,end_part_name=None, is_for_extract_models=False):
+    def __init__(self, thread_id, shared_list=None, proxyLoader=None,start_brand=None, start_year=None, start_model=None, start_elem_X=None, start_elem_XX=None, start_part_name=None, end_brand=None,end_year=None,end_model=None,end_elem_X=None,end_elem_XX=None,end_part_name=None, is_for_extract_models=False, with_selenium_grid= True, use_proxy= True):
         
         super(WorkerThread, self).__init__()
         
@@ -28,8 +29,8 @@ class WorkerThread(threading.Thread):
         self.end_elem_XX=end_elem_XX
         self.end_part_name=end_part_name
         
-        self.with_selenium_grid = True
-        self.use_proxy = True
+        self.with_selenium_grid = with_selenium_grid
+        self.use_proxy = use_proxy
         
         self.proxy = None
         self.PROXY_HOST = '161.123.152.67' # rotating proxy or host
@@ -38,11 +39,11 @@ class WorkerThread(threading.Thread):
         self.PROXY_PASS = '*************' # password
 
         self.is_for_extract_models = is_for_extract_models
-        if self.is_for_extract_models :
-            self.with_selenium_grid = False
-            self.use_proxy = False
     def run(self):
         if self.is_for_extract_models:
+            with self.proxyLoader.lock:
+                self.proxy = self.proxyLoader.get_proxy(self.thread_id-1)
+            self.init_proxy()
             self.start_scraping()
         else:
             while True:
